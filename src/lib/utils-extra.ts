@@ -32,9 +32,40 @@ export function isValidGitHubUrl(url: string): boolean {
         return false;
     }
     
-    // Basic GitHub URL validation
-    const githubUrlPattern = /^https:\/\/github\.com\/[\w\-\.]+\/[\w\-\.]+\/?$/;
-    return githubUrlPattern.test(url.trim());
+    const trimmedUrl = url.trim();
+    
+    // Enhanced GitHub URL validation that handles various GitHub URL formats
+    // Matches: https://github.com/owner/repo with optional:
+    // - .git suffix
+    // - trailing slash
+    // - query parameters (?ref=main, ?tab=readme, etc.)
+    // - path segments (/tree/main, /blob/main/file.md, etc.)
+    const githubUrlPattern = /^https:\/\/github\.com\/[\w\-\.]+\/[\w\-\.]+(?:\.git)?(?:\/[^?]*)?(?:\?.*)?$/;
+    
+    return githubUrlPattern.test(trimmedUrl);
+}
+
+/**
+ * Extracts the base repository URL from a GitHub URL
+ * @param url - The GitHub URL to normalize
+ * @returns Base repository URL or the original URL if extraction fails
+ */
+export function normalizeGitHubUrl(url: string): string {
+    if (!url || typeof url !== 'string') {
+        return url;
+    }
+    
+    const trimmedUrl = url.trim();
+    
+    // Extract owner/repo from GitHub URL, handling .git suffix separately
+    const match = trimmedUrl.match(/^https:\/\/github\.com\/([\w\-\.]+)\/([\w\-\.]+?)(?:\.git)?(?:\/.*)?(?:\?.*)?$/);
+    
+    if (match) {
+        const [, owner, repo] = match;
+        return `https://github.com/${owner}/${repo}`;
+    }
+    
+    return trimmedUrl;
 }
 
 /**
