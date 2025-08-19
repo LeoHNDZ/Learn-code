@@ -28,7 +28,7 @@ export function FileTree({ nodes, onFileSelect, basePath = '' }: FileTreeProps) 
           {node.type === 'folder' ? (
             <Accordion type="single" collapsible className="w-full">
               <AccordionItem value={node.name} className="border-b-0">
-                <AccordionTrigger className="p-1 rounded-md hover:bg-sidebar-accent [&[data-state=open]>svg:first-child]:hidden [&[data-state=closed]>svg:last-child]:hidden">
+                <AccordionTrigger className="p-1 rounded-md hover:bg-sidebar-accent hover-transition [&[data-state=open]>svg:first-child]:hidden [&[data-state=closed]>svg:last-child]:hidden">
                     <div className="flex items-center gap-2 text-sm">
                         <Folder className="h-4 w-4 text-primary" />
                         <FolderOpen className="h-4 w-4 text-primary" />
@@ -43,7 +43,10 @@ export function FileTree({ nodes, onFileSelect, basePath = '' }: FileTreeProps) 
           ) : (
             <Button
               variant="ghost"
-              className={cn("w-full justify-start p-1 h-auto font-normal", activeNode === node.id && "bg-sidebar-accent")}
+              className={cn(
+                "w-full justify-start p-1 h-auto font-normal hover-transition", 
+                activeNode === node.id && "bg-sidebar-accent"
+              )}
               onClick={() => handleFileClick({ path: `${basePath}/${node.name}`, content: node.content, id: node.id })}
             >
               <div className="flex items-center gap-2 text-sm ml-2">

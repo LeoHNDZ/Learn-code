@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { LoaderCircle, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { explainCodeBlock } from "@/ai/flows/explain-code-block";
+import { FileAnnotations } from "@/components/file-annotations";
 
 type CodeViewProps = {
   filePath: string;
@@ -65,8 +66,13 @@ export function CodeView({ filePath, code, projectStructure }: CodeViewProps) {
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle>{filePath}</CardTitle>
-          <CardDescription>Select a block of code to get an explanation.</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>{filePath}</CardTitle>
+              <CardDescription>Select a block of code to get an explanation.</CardDescription>
+            </div>
+            <FileAnnotations filePath={filePath} />
+          </div>
         </CardHeader>
         <CardContent className="relative">
           {selectedText && (

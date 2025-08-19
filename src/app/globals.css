@@ -84,10 +84,39 @@
   }
 }
 
+/* Smooth transitions for sidebar and UI elements */
+.sidebar-transition {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal-transition {
+  transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+}
+
+.hover-transition {
+  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+
 .code-viewer {
   @apply bg-white dark:bg-gray-900/80 p-4 rounded-lg overflow-auto border shadow-inner;
+  transition: border-color 0.2s ease-in-out;
 }
 
 .code-viewer pre {
   @apply text-sm;
+}
+
+/* Enhanced button and interactive element transitions */
+button, .interactive-element {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Smooth accordion animations */
+[data-radix-accordion-content] {
+  transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Progress bar animation */
+.progress-bar {
+  transition: width 0.5s ease-in-out;
 }
