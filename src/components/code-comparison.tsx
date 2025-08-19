@@ -50,6 +50,14 @@ export function CodeComparison({ files, currentFile }: CodeComparisonProps) {
   };
 
   const allFiles = getAllFiles(files);
+  if (currentFile && !allFiles.find(f => f.path === currentFile.path)) {
+    allFiles.unshift({
+        path: currentFile.path,
+        content: currentFile.content,
+        label: currentFile.path
+    });
+  }
+
 
   const handleCopyContent = async (content: string, side: 'left' | 'right') => {
     try {
@@ -124,8 +132,12 @@ export function CodeComparison({ files, currentFile }: CodeComparisonProps) {
               <Select 
                 value={leftFile?.path || ''} 
                 onValueChange={(value) => {
-                  const file = allFiles.find(f => f.path === value);
-                  setLeftFile(file || null);
+                  if (value === 'current' && currentFile) {
+                     setLeftFile({path: currentFile.path, content: currentFile.content, label: currentFile.path});
+                  } else {
+                    const file = allFiles.find(f => f.path === value);
+                    setLeftFile(file || null);
+                  }
                 }}
               >
                 <SelectTrigger>
@@ -152,8 +164,12 @@ export function CodeComparison({ files, currentFile }: CodeComparisonProps) {
               <Select 
                 value={rightFile?.path || ''} 
                 onValueChange={(value) => {
-                  const file = allFiles.find(f => f.path === value);
-                  setRightFile(file || null);
+                  if (value === 'current' && currentFile) {
+                     setRightFile({path: currentFile.path, content: currentFile.content, label: currentFile.path});
+                  } else {
+                    const file = allFiles.find(f => f.path === value);
+                    setRightFile(file || null);
+                  }
                 }}
               >
                 <SelectTrigger>
@@ -301,3 +317,5 @@ export function CodeComparison({ files, currentFile }: CodeComparisonProps) {
     </Dialog>
   );
 }
+
+    
