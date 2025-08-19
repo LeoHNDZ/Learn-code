@@ -21,7 +21,29 @@ const ProjectOverviewOutputSchema = z.object({
 export type ProjectOverviewOutput = z.infer<typeof ProjectOverviewOutputSchema>;
 
 export async function generateProjectOverview(input: ProjectOverviewInput): Promise<ProjectOverviewOutput> {
-  return projectOverviewFlow(input);
+  try {
+    const result = await projectOverviewFlow(input);
+    return result;
+  } catch (error) {
+    console.error('Error in generateProjectOverview:', error);
+    
+    // Enhanced error handling for different types of failures
+    if (error instanceof Error) {
+      // Check for specific error patterns and provide appropriate responses
+      if (error.message.includes('404') || error.message.includes('not found')) {
+        throw new Error('Repository not found. Please verify the URL and ensure the repository is public.');
+      } else if (error.message.includes('403') || error.message.includes('forbidden')) {
+        throw new Error('Access denied. The repository might be private or you may have exceeded rate limits.');
+      } else if (error.message.includes('network') || error.message.includes('fetch')) {
+        throw new Error('Network error. Please check your internet connection and try again.');
+      } else if (error.message.includes('timeout')) {
+        throw new Error('Request timed out. The repository might be too large or the service is currently slow.');
+      }
+    }
+    
+    // For any other errors, provide a generic fallback message
+    throw new Error('Unable to analyze repository. This might be due to repository size, connectivity issues, or service limitations.');
+  }
 }
 
 const projectOverviewPrompt = ai.definePrompt({

@@ -6,6 +6,7 @@
 import { 
     countFiles, 
     isValidGitHubUrl, 
+    normalizeGitHubUrl,
     calculateProgress, 
     formatFileSize, 
     debounce 
@@ -90,7 +91,7 @@ function testCountFiles(): void {
 function testIsValidGitHubUrl(): void {
     console.log('\n=== Testing isValidGitHubUrl function ===');
     
-    // Valid URLs
+    // Valid URLs - basic cases
     assertTrue(
         isValidGitHubUrl('https://github.com/user/repo'), 
         'Should validate basic GitHub URL'
@@ -102,6 +103,36 @@ function testIsValidGitHubUrl(): void {
     assertTrue(
         isValidGitHubUrl('https://github.com/user.name/repo.name'), 
         'Should validate GitHub URL with dots'
+    );
+    
+    // Valid URLs - edge cases for improved validation
+    assertTrue(
+        isValidGitHubUrl('https://github.com/LeoHNDZ/studio'), 
+        'Should validate the specific URL mentioned in the issue'
+    );
+    assertTrue(
+        isValidGitHubUrl('https://github.com/user/repo.git'), 
+        'Should validate GitHub URL with .git suffix'
+    );
+    assertTrue(
+        isValidGitHubUrl('https://github.com/user/repo?ref=main'), 
+        'Should validate GitHub URL with query parameters'
+    );
+    assertTrue(
+        isValidGitHubUrl('https://github.com/user/repo/tree/main'), 
+        'Should validate GitHub URL with path segments'
+    );
+    assertTrue(
+        isValidGitHubUrl('https://github.com/user/repo/blob/main/README.md'), 
+        'Should validate GitHub URL with file paths'
+    );
+    assertTrue(
+        isValidGitHubUrl('https://github.com/user/repo?tab=readme'), 
+        'Should validate GitHub URL with tab parameter'
+    );
+    assertTrue(
+        isValidGitHubUrl('https://github.com/user/repo/'), 
+        'Should validate GitHub URL with trailing slash'
     );
     
     // Invalid URLs
@@ -120,6 +151,51 @@ function testIsValidGitHubUrl(): void {
     assertFalse(
         isValidGitHubUrl('https://github.com/'), 
         'Should reject incomplete GitHub URLs'
+    );
+    assertFalse(
+        isValidGitHubUrl('http://github.com/user/repo'), 
+        'Should reject non-HTTPS URLs'
+    );
+}
+
+// Test normalizeGitHubUrl function
+function testNormalizeGitHubUrl(): void {
+    console.log('\n=== Testing normalizeGitHubUrl function ===');
+    
+    assertEqual(
+        normalizeGitHubUrl('https://github.com/user/repo'), 
+        'https://github.com/user/repo',
+        'Should return basic URL unchanged'
+    );
+    assertEqual(
+        normalizeGitHubUrl('https://github.com/user/repo.git'), 
+        'https://github.com/user/repo',
+        'Should remove .git suffix'
+    );
+    assertEqual(
+        normalizeGitHubUrl('https://github.com/user/repo?ref=main'), 
+        'https://github.com/user/repo',
+        'Should remove query parameters'
+    );
+    assertEqual(
+        normalizeGitHubUrl('https://github.com/user/repo/tree/main'), 
+        'https://github.com/user/repo',
+        'Should remove path segments'
+    );
+    assertEqual(
+        normalizeGitHubUrl('https://github.com/user/repo/blob/main/README.md'), 
+        'https://github.com/user/repo',
+        'Should remove file paths'
+    );
+    assertEqual(
+        normalizeGitHubUrl('https://github.com/LeoHNDZ/studio'), 
+        'https://github.com/LeoHNDZ/studio',
+        'Should handle the specific issue URL correctly'
+    );
+    assertEqual(
+        normalizeGitHubUrl('invalid-url'), 
+        'invalid-url',
+        'Should return invalid URLs unchanged'
     );
 }
 
@@ -173,6 +249,7 @@ function runTests(): void {
     
     testCountFiles();
     testIsValidGitHubUrl();
+    testNormalizeGitHubUrl();
     testCalculateProgress();
     testFormatFileSize();
     testDebounce();
@@ -184,6 +261,7 @@ function runTests(): void {
 export {
     testCountFiles,
     testIsValidGitHubUrl,
+    testNormalizeGitHubUrl,
     testCalculateProgress,
     testFormatFileSize,
     testDebounce,

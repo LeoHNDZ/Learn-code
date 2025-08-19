@@ -15,6 +15,7 @@ import { CodeView } from '@/components/code-view';
 import { Settings, type AppSettings } from '@/components/settings';
 import { CodeComparison } from '@/components/code-comparison';
 import { mockFileTree, countFiles, type FileNode } from '@/lib/mock-data';
+import { isValidGitHubUrl, normalizeGitHubUrl } from '@/lib/utils-extra';
 
 export function StudioFlowApp() {
   const [repoUrl, setRepoUrl] = useState('https://github.com/LeoHNDZ/studio');
@@ -102,20 +103,30 @@ export function StudioFlowApp() {
 
   const handleAnalyzeRepo = async () => {
     // Input validation with user-friendly error messages
-    if (!repoUrl) {
+    if (!repoUrl || !repoUrl.trim()) {
       toast({ 
         title: "Error", 
-        description: "Please enter a valid repository URL.", 
+        description: "Please enter a repository URL.", 
         variant: "destructive" 
       });
       return;
     }
     
-    // Basic URL validation to ensure it's a GitHub repository
-    if (!repoUrl.includes('github.com')) {
+    // Enhanced URL validation using proper validation function
+    if (!isValidGitHubUrl(repoUrl)) {
+      let errorMessage = "Please enter a valid GitHub repository URL.";
+      
+      if (!repoUrl.includes('github.com')) {
+        errorMessage = "Only GitHub repository URLs are supported. Please use a URL like: https://github.com/owner/repository";
+      } else if (!repoUrl.startsWith('https://')) {
+        errorMessage = "Please use HTTPS URLs. Example: https://github.com/owner/repository";
+      } else {
+        errorMessage = "Invalid GitHub URL format. Please use: https://github.com/owner/repository";
+      }
+      
       toast({ 
         title: "Invalid URL", 
-        description: "Please enter a valid GitHub repository URL.", 
+        description: errorMessage, 
         variant: "destructive" 
       });
       return;
@@ -123,21 +134,47 @@ export function StudioFlowApp() {
     
     setIsLoading(true);
     try {
+      // Normalize the URL for API processing (removes .git, query params, paths)
+      const normalizedUrl = normalizeGitHubUrl(repoUrl);
+      
       // Attempt to generate AI-powered project overview
-      const result = await generateProjectOverview({ repoUrl });
+      const result = await generateProjectOverview({ repoUrl: normalizedUrl });
       setOverview(result.overview);
       setIsOverviewOpen(true);
       setFileTree(mockFileTree); // Load mock data after analysis
       setViewedFiles(new Set()); // Reset progress tracking
     } catch (error) {
       console.error(error);
-      // Enhanced error handling with specific error message extraction
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      
+      // Enhanced error handling with specific error types
+      let errorTitle = "Analysis Failed";
+      let errorMessage = "Unable to analyze the repository. Please try again.";
+      
+      if (error instanceof Error) {
+        // Handle specific error types
+        if (error.message.includes('404') || error.message.includes('Not Found')) {
+          errorTitle = "Repository Not Found";
+          errorMessage = "The repository could not be found. Please check that the URL is correct and the repository is public.";
+        } else if (error.message.includes('403') || error.message.includes('Forbidden')) {
+          errorTitle = "Access Denied";
+          errorMessage = "Access to this repository is restricted. Please ensure the repository is public.";
+        } else if (error.message.includes('rate limit') || error.message.includes('429')) {
+          errorTitle = "Rate Limit Exceeded";
+          errorMessage = "Too many requests. Please wait a moment before trying again.";
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+          errorTitle = "Network Error";
+          errorMessage = "Unable to connect to the repository. Please check your internet connection and try again.";
+        } else {
+          errorMessage = `Error: ${error.message}`;
+        }
+      }
+      
       toast({ 
-        title: "Analysis Failed", 
-        description: `Unable to analyze the repository: ${errorMessage}. Please verify the URL is accessible and try again.`, 
+        title: errorTitle, 
+        description: errorMessage, 
         variant: "destructive" 
       });
+      
       // Graceful fallback: load mock data even if AI analysis fails
       setFileTree(mockFileTree); 
       setViewedFiles(new Set());
@@ -201,7 +238,7 @@ export function StudioFlowApp() {
                   <div className="flex-grow flex items-center gap-2">
                     <Github className="text-muted-foreground" aria-hidden="true" />
                     <Input
-                      placeholder="Enter public GitHub URL..."
+                      placeholder="Enter GitHub repository URL (e.g., https://github.com/owner/repo)"
                       value={repoUrl}
                       onChange={(e) => setRepoUrl(e.target.value)}
                       disabled={isLoading}
