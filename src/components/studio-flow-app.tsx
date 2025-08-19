@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Github, BookOpen, LoaderCircle, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,8 @@ import { generateProjectOverview } from '@/ai/flows/project-overview';
 import { useToast } from '@/hooks/use-toast';
 import { FileTree } from '@/components/file-tree';
 import { CodeView } from '@/components/code-view';
+import { Settings, type AppSettings } from '@/components/settings';
+import { CodeComparison } from '@/components/code-comparison';
 import { mockFileTree, countFiles, type FileNode } from '@/lib/mock-data';
 
 export function StudioFlowApp() {
@@ -19,6 +21,7 @@ export function StudioFlowApp() {
   const [isLoading, setIsLoading] = useState(false);
   const [overview, setOverview] = useState('');
   const [isOverviewOpen, setIsOverviewOpen] = useState(false);
+  const [settings, setSettings] = useState<AppSettings | null>(null);
   
   const [fileTree, setFileTree] = useState<FileNode[]>([]);
   const [selectedFile, setSelectedFile] = useState<{ path: string; content: string; } | null>(null);
@@ -26,8 +29,38 @@ export function StudioFlowApp() {
 
   const { toast } = useToast();
 
+  // Load settings from localStorage on mount
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('studioflow-settings');
+    if (savedSettings) {
+      try {
+        setSettings(JSON.parse(savedSettings));
+      } catch (error) {
+        console.error('Failed to parse settings:', error);
+      }
+    }
+  }, []);
+
   const totalFiles = useMemo(() => countFiles(fileTree), [fileTree]);
   const progress = totalFiles > 0 ? (viewedFiles.size / totalFiles) * 100 : 0;
+
+  const handleSettingsChange = useCallback((newSettings: AppSettings) => {
+    setSettings(newSettings);
+    // Apply theme changes
+    if (newSettings.theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else if (newSettings.theme === 'light') {
+      document.documentElement.classList.remove('dark');
+    } else {
+      // System theme
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      if (mediaQuery.matches) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    }
+  }, []);
 
   const handleAnalyzeRepo = async () => {
     if (!repoUrl) {
@@ -106,7 +139,10 @@ export function StudioFlowApp() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                  <CardTitle className="text-lg font-medium">Codebase Analysis</CardTitle>
-                 <SidebarTrigger className="md:hidden"/>
+                 <div className="flex items-center gap-2">
+                   <Settings onSettingsChange={handleSettingsChange} />
+                   <SidebarTrigger className="md:hidden"/>
+                 </div>
               </CardHeader>
               <CardContent>
                 <div className="flex flex-col sm:flex-row gap-4">
@@ -142,11 +178,19 @@ export function StudioFlowApp() {
             </Card>
 
             {selectedFile ? (
-              <CodeView 
-                filePath={selectedFile.path}
-                code={selectedFile.content}
-                projectStructure={projectStructureString}
-              />
+              <div className="space-y-4">
+                <div className="flex justify-end">
+                  <CodeComparison 
+                    files={fileTree} 
+                    currentFile={selectedFile}
+                  />
+                </div>
+                <CodeView 
+                  filePath={selectedFile.path}
+                  code={selectedFile.content}
+                  projectStructure={projectStructureString}
+                />
+              </div>
             ) : (
               <div className="flex items-center justify-center text-center p-10 border-2 border-dashed rounded-lg h-96">
                 <div>
