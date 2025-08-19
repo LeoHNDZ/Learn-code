@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { GitCompare, X, Copy, Check } from 'lucide-react';
+import { GitCompare, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -62,7 +62,7 @@ export function CodeComparison({ files, currentFile }: CodeComparisonProps) {
       
       // Reset the copy state after 2 seconds
       setTimeout(() => setCopiedSide(null), 2000);
-    } catch (error) {
+    } catch {
       toast({
         title: 'Copy Failed',
         description: 'Unable to copy content to clipboard.',

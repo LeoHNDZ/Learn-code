@@ -124,7 +124,7 @@ export function FileAnnotations({ filePath, onAnnotationAdd }: FileAnnotationsPr
         title: 'Annotations Copied',
         description: 'All annotations have been copied to clipboard as JSON.',
       });
-    } catch (error) {
+    } catch {
       toast({
         title: 'Share Failed',
         description: 'Unable to copy annotations to clipboard.',
