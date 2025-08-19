@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { Github, BookOpen, LoaderCircle, Sparkles, Sidebar as SidebarIcon } from 'lucide-react';
+import { useState, useMemo, useCallback } from 'react';
+import { Github, BookOpen, LoaderCircle, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { SidebarProvider, Sidebar, SidebarInset, SidebarTrigger, SidebarContent, SidebarHeader } from '@/components/ui/sidebar';
 import { generateProjectOverview } from '@/ai/flows/project-overview';
@@ -31,9 +31,24 @@ export function StudioFlowApp() {
 
   const handleAnalyzeRepo = async () => {
     if (!repoUrl) {
-      toast({ title: "Error", description: "Please enter a repository URL.", variant: "destructive" });
+      toast({ 
+        title: "Error", 
+        description: "Please enter a valid repository URL.", 
+        variant: "destructive" 
+      });
       return;
     }
+    
+    // Basic URL validation
+    if (!repoUrl.includes('github.com')) {
+      toast({ 
+        title: "Invalid URL", 
+        description: "Please enter a valid GitHub repository URL.", 
+        variant: "destructive" 
+      });
+      return;
+    }
+    
     setIsLoading(true);
     try {
       const result = await generateProjectOverview({ repoUrl });
@@ -43,7 +58,12 @@ export function StudioFlowApp() {
       setViewedFiles(new Set()); // Reset progress
     } catch (error) {
       console.error(error);
-      toast({ title: "Analysis Failed", description: "Could not analyze the repository. Please check the URL and try again.", variant: "destructive" });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      toast({ 
+        title: "Analysis Failed", 
+        description: `Unable to analyze the repository: ${errorMessage}. Please verify the URL is accessible and try again.`, 
+        variant: "destructive" 
+      });
       setFileTree(mockFileTree); // Load mock data even if AI fails, for demo purposes
       setViewedFiles(new Set());
     } finally {
@@ -51,17 +71,17 @@ export function StudioFlowApp() {
     }
   };
 
-  const handleFileSelect = (file: { path: string, content: string, id: string }) => {
+  const handleFileSelect = useCallback((file: { path: string, content: string, id: string }) => {
     setSelectedFile({ path: file.path, content: file.content });
     setViewedFiles(prev => new Set(prev).add(file.id));
-  };
+  }, []);
 
   const projectStructureString = useMemo(() => JSON.stringify(fileTree, null, 2), [fileTree]);
 
   return (
     <SidebarProvider>
       <div className="relative min-h-screen w-full bg-background">
-        <Sidebar>
+        <Sidebar className="sidebar-transition">
           <SidebarContent className="p-0">
              <SidebarHeader>
                 <div className="flex items-center gap-2">
@@ -115,7 +135,7 @@ export function StudioFlowApp() {
                             <span className="text-sm font-medium text-muted-foreground">Exploration Progress</span>
                             <span className="text-sm font-semibold text-accent-foreground">{viewedFiles.size} / {totalFiles} files</span>
                         </div>
-                        <Progress value={progress} className="w-full [&>div]:bg-accent" />
+                        <Progress value={progress} className="w-full [&>div]:bg-accent progress-bar" />
                     </div>
                 )}
               </CardContent>
@@ -139,13 +159,13 @@ export function StudioFlowApp() {
         </SidebarInset>
 
         <AlertDialog open={isOverviewOpen} onOpenChange={setIsOverviewOpen}>
-          <AlertDialogContent className="max-w-2xl">
+          <AlertDialogContent className="max-w-2xl modal-transition">
             <AlertDialogHeader>
               <AlertDialogTitle className="flex items-center gap-2">
                 <BookOpen /> Project Overview
               </AlertDialogTitle>
               <AlertDialogDescription>
-                Here is a high-level overview of the project's architecture, key components, and data flow.
+                Here is a high-level overview of the project&apos;s architecture, key components, and data flow.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <div className="max-h-[60vh] overflow-y-auto pr-4 text-sm whitespace-pre-wrap font-mono bg-muted p-4 rounded-md">
