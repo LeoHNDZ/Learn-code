@@ -50,11 +50,43 @@ const projectOverviewPrompt = ai.definePrompt({
   name: 'projectOverviewPrompt',
   input: {schema: ProjectOverviewInputSchema},
   output: {schema: ProjectOverviewOutputSchema},
-  prompt: `You are an AI expert in software architecture. You are given the URL of a public Github repository.
-  You will analyze the repository and provide a high-level overview of the project's architecture, key components, and data flow.
+  prompt: `You are an expert software architect and code analyst. You will analyze a GitHub repository and provide a comprehensive, well-structured overview.
 
-  Github Repository URL: {{{repoUrl}}}
-  `,
+**Repository URL**: {{{repoUrl}}}
+
+Please analyze this repository and provide a detailed overview covering:
+
+## 🏗️ Architecture Overview
+- Primary framework/technology stack
+- Overall architectural pattern (MVC, microservices, etc.)
+- Key design decisions and patterns used
+
+## 📁 Project Structure
+- Main directories and their purposes
+- Configuration files and their roles
+- Entry points and important files
+
+## 🔧 Core Components
+- Main modules and their responsibilities
+- Key classes, functions, or components
+- Dependencies and how they interact
+
+## 📊 Data Flow
+- How data moves through the application
+- API endpoints or data sources
+- State management approach
+
+## 🚀 Key Features
+- Primary functionality and capabilities
+- User-facing features
+- Technical highlights
+
+## 🛠️ Development Setup
+- Prerequisites and dependencies
+- Build and deployment process
+- Testing approach
+
+Provide a clear, concise analysis that helps developers quickly understand what this project does and how it's organized. Focus on the most important aspects that would help someone new to the codebase get oriented.`,
 });
 
 const projectOverviewFlow = ai.defineFlow(
