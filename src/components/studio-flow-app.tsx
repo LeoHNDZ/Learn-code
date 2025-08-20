@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
@@ -291,23 +292,6 @@ export function StudioFlowApp() {
               </CardContent>
             </Card>
 
-            {/* AI Chat Example - New feature demonstration */}
-            {fileTree.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg font-medium">AI Chat Demo</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground">
-                      Try the new AI chat feature below. This demonstrates the clean AI architecture layer.
-                    </p>
-                    <ChatExample />
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
             {/* Code viewer and analysis area */}
             {selectedFile ? (
               <div className="space-y-4" role="region" aria-label="Code viewer">
@@ -332,6 +316,23 @@ export function StudioFlowApp() {
                   </p>
                 </div>
               </div>
+            )}
+
+            {/* AI Chat Example - New feature demonstration */}
+            {fileTree.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg font-medium">AI Chat Demo</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">
+                      Try the new AI chat feature below. This demonstrates the clean AI architecture layer.
+                    </p>
+                    <ChatExample />
+                  </div>
+                </CardContent>
+              </Card>
             )}
           </main>
         </SidebarInset>
@@ -359,3 +360,5 @@ export function StudioFlowApp() {
     </SidebarProvider>
   );
 }
+
+    
