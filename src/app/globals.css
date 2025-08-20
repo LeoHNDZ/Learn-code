@@ -1,5 +1,3 @@
-@import '../styles/tokens.css';
-@import '../styles/buttons.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -122,3 +120,7 @@ button, .interactive-element {
 .progress-bar {
   transition: width 0.5s ease-in-out;
 }
+
+/* New Design System Imports */
+@import '../styles/tokens.css';
+@import '../styles/buttons.css';

@@ -14,6 +14,7 @@ import { LazyFileTree } from '@/components/lazy-file-tree';
 import { CodeView } from '@/components/code-view';
 import { Settings, type AppSettings } from '@/components/settings';
 import { CodeComparison } from '@/components/code-comparison';
+import { ChatExample } from '@/components/ChatExample';
 import { mockFileTree, countFiles, type FileNode } from '@/lib/mock-data';
 import { isValidGitHubUrl, normalizeGitHubUrl } from '@/lib/utils-extra';
 
@@ -289,6 +290,23 @@ export function StudioFlowApp() {
                 )}
               </CardContent>
             </Card>
+
+            {/* AI Chat Example - New feature demonstration */}
+            {fileTree.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg font-medium">AI Chat Demo</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">
+                      Try the new AI chat feature below. This demonstrates the clean AI architecture layer.
+                    </p>
+                    <ChatExample />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Code viewer and analysis area */}
             {selectedFile ? (
