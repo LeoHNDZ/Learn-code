@@ -10,13 +10,14 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { SidebarProvider, Sidebar, SidebarInset, SidebarTrigger, SidebarContent, SidebarHeader } from '@/components/ui/sidebar';
 import { generateProjectOverview } from '@/ai/flows/project-overview';
+import { getRepoFileTree } from '@/ai/flows/get-repo-file-tree';
 import { useToast } from '@/hooks/use-toast';
 import { LazyFileTree } from '@/components/lazy-file-tree';
 import { CodeView } from '@/components/code-view';
 import { Settings, type AppSettings } from '@/components/settings';
 import { CodeComparison } from '@/components/code-comparison';
 import { ChatExample } from '@/components/ChatExample';
-import { mockFileTree, countFiles, type FileNode } from '@/lib/mock-data';
+import { countFiles, type FileNode } from '@/lib/mock-data';
 import { isValidGitHubUrl, normalizeGitHubUrl } from '@/lib/utils-extra';
 
 export function StudioFlowApp() {
@@ -135,15 +136,22 @@ export function StudioFlowApp() {
     }
     
     setIsLoading(true);
+    setFileTree([]);
+    setSelectedFile(null);
+
     try {
       // Normalize the URL for API processing (removes .git, query params, paths)
       const normalizedUrl = normalizeGitHubUrl(repoUrl);
       
-      // Attempt to generate AI-powered project overview
-      const result = await generateProjectOverview({ repoUrl: normalizedUrl });
-      setOverview(result.overview);
+      // Fetch repo data in parallel
+      const [overviewResult, filesResult] = await Promise.all([
+        generateProjectOverview({ repoUrl: normalizedUrl }),
+        getRepoFileTree({ repoUrl: normalizedUrl })
+      ]);
+
+      setOverview(overviewResult.overview);
+      setFileTree(filesResult);
       setIsOverviewOpen(true);
-      setFileTree(mockFileTree); // Load mock data after analysis
       setViewedFiles(new Set()); // Reset progress tracking
     } catch (error) {
       console.error(error);
@@ -159,7 +167,7 @@ export function StudioFlowApp() {
           errorMessage = "The repository could not be found. Please check that the URL is correct and the repository is public.";
         } else if (error.message.includes('403') || error.message.includes('Forbidden')) {
           errorTitle = "Access Denied";
-          errorMessage = "Access to this repository is restricted. Please ensure the repository is public.";
+          errorMessage = "Access to this repository is restricted. It might be private or require a GITHUB_TOKEN environment variable with access rights.";
         } else if (error.message.includes('rate limit') || error.message.includes('429')) {
           errorTitle = "Rate Limit Exceeded";
           errorMessage = "Too many requests. Please wait a moment before trying again.";
@@ -177,9 +185,6 @@ export function StudioFlowApp() {
         variant: "destructive" 
       });
       
-      // Graceful fallback: load mock data even if AI analysis fails
-      setFileTree(mockFileTree); 
-      setViewedFiles(new Set());
     } finally {
       setIsLoading(false);
     }
@@ -217,7 +222,7 @@ export function StudioFlowApp() {
               </div>
             ) : (
                 <div className="p-4 text-sm text-muted-foreground" role="status">
-                    <p>Enter a repository URL to start exploring the codebase.</p>
+                    {isLoading ? 'Loading file tree...' : 'Enter a repository URL to start exploring the codebase.'}
                 </div>
             )}
           </SidebarContent>
@@ -228,7 +233,7 @@ export function StudioFlowApp() {
           <main className="p-4 md:p-6 space-y-4" role="main">
             {/* Repository analysis controls */}
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardHeader className="flex flex-row items-center justify-between">
                  <CardTitle className="text-lg font-medium">Codebase Analysis</CardTitle>
                  <div className="flex items-center gap-2">
                    <Settings onSettingsChange={handleSettingsChange} />
@@ -255,8 +260,8 @@ export function StudioFlowApp() {
                   >
                     {isLoading ? (
                       <>
-                        <LoaderCircle className="animate-spin" aria-hidden="true" />
-                        <span className="sr-only">Analyzing repository...</span>
+                        <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                        Analyzing...
                       </>
                     ) : (
                       <>
@@ -360,5 +365,3 @@ export function StudioFlowApp() {
     </SidebarProvider>
   );
 }
-
-    
