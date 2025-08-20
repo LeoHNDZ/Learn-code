@@ -11,13 +11,14 @@ import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescript
 import { SidebarProvider, Sidebar, SidebarInset, SidebarTrigger, SidebarContent, SidebarHeader } from '@/components/ui/sidebar';
 import { generateProjectOverview } from '@/ai/flows/project-overview';
 import { getRepoFileTree } from '@/ai/flows/get-repo-file-tree';
+import { getFileContent } from '@/ai/flows/get-file-content';
 import { useToast } from '@/hooks/use-toast';
 import { LazyFileTree } from '@/components/lazy-file-tree';
 import { CodeView } from '@/components/code-view';
 import { Settings, type AppSettings } from '@/components/settings';
 import { CodeComparison } from '@/components/code-comparison';
 import { ChatExample } from '@/components/ChatExample';
-import { countFiles, type FileNode } from '@/lib/mock-data';
+import { countFiles, type FileNode, mockFileTreeWithPlaceholders } from '@/lib/mock-data';
 import { isValidGitHubUrl, normalizeGitHubUrl } from '@/lib/utils-extra';
 
 export function StudioFlowApp() {
@@ -30,6 +31,8 @@ export function StudioFlowApp() {
   const [fileTree, setFileTree] = useState<FileNode[]>([]);
   const [selectedFile, setSelectedFile] = useState<{ path: string; content: string; } | null>(null);
   const [viewedFiles, setViewedFiles] = useState<Set<string>>(new Set());
+  const [isLoadingFileContent, setIsLoadingFileContent] = useState(false);
+  const [isDemoMode, setIsDemoMode] = useState(false);
 
   const { toast } = useToast();
 
@@ -138,6 +141,7 @@ export function StudioFlowApp() {
     setIsLoading(true);
     setFileTree([]);
     setSelectedFile(null);
+    setIsDemoMode(false);
 
     try {
       // Normalize the URL for API processing (removes .git, query params, paths)
@@ -175,12 +179,256 @@ export function StudioFlowApp() {
     }
   };
 
-  // Memoized file selection handler to prevent unnecessary re-renders
-  const handleFileSelect = useCallback((file: { path: string, content: string, id: string }) => {
+  // Helper function to update file content in the file tree
+  const updateFileContentInTree = useCallback((fileId: string, newContent: string): FileNode[] => {
+    const updateNode = (node: FileNode): FileNode => {
+      if (node.type === 'file' && node.id === fileId) {
+        return { ...node, content: newContent };
+      } else if (node.type === 'folder') {
+        return { ...node, children: node.children.map(updateNode) };
+      }
+      return node;
+    };
+    
+    return fileTree.map(updateNode);
+  }, [fileTree]);
+
+  // Demo mode to test lazy loading with mock data
+  const loadDemoData = useCallback(() => {
+    setFileTree(mockFileTreeWithPlaceholders);
+    setSelectedFile(null);
+    setViewedFiles(new Set());
+    setIsDemoMode(true);
+    setOverview('Demo repository with lazy loading functionality. Files with placeholder content will be "loaded" when clicked.');
+    setIsOverviewOpen(true);
+    
+    toast({
+      title: "Demo mode loaded",
+      description: "Click on files with placeholder content to test lazy loading.",
+    });
+  }, [toast]);
+
+  // Simulate file content for demo mode
+  const simulateFileContent = useCallback((filePath: string): string => {
+    const fileName = filePath.split('/').pop() || '';
+    
+    if (fileName === 'button.tsx') {
+      return `import React from 'react';
+import { cn } from '@/lib/utils';
+
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'default' | 'outline' | 'ghost';
+  size?: 'default' | 'sm' | 'lg';
+  children: React.ReactNode;
+}
+
+export const Button: React.FC<ButtonProps> = ({ 
+  variant = 'default',
+  size = 'default',
+  className,
+  children,
+  ...props 
+}) => {
+  return (
+    <button
+      className={cn(
+        "inline-flex items-center justify-center rounded-md font-medium transition-colors",
+        variant === 'default' && "bg-primary text-primary-foreground hover:bg-primary/90",
+        variant === 'outline' && "border border-input bg-background hover:bg-accent",
+        variant === 'ghost' && "hover:bg-accent hover:text-accent-foreground",
+        size === 'default' && "h-10 px-4 py-2",
+        size === 'sm' && "h-9 rounded-md px-3",
+        size === 'lg' && "h-11 rounded-md px-8",
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+};`;
+    } else if (fileName === 'input.tsx') {
+      return `import React from 'react';
+import { cn } from '@/lib/utils';
+
+interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  error?: string;
+}
+
+export const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ className, error, ...props }, ref) => {
+    return (
+      <div className="space-y-1">
+        <input
+          className={cn(
+            "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2",
+            "text-sm ring-offset-background file:border-0 file:bg-transparent",
+            "file:text-sm file:font-medium placeholder:text-muted-foreground",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            "disabled:cursor-not-allowed disabled:opacity-50",
+            error && "border-destructive",
+            className
+          )}
+          ref={ref}
+          {...props}
+        />
+        {error && (
+          <p className="text-sm text-destructive">{error}</p>
+        )}
+      </div>
+    );
+  }
+);
+Input.displayName = "Input";`;
+    } else if (fileName === 'utils.ts') {
+      return `import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+/**
+ * Utility function to merge Tailwind CSS classes
+ * Combines clsx for conditional classes with tailwind-merge for deduplication
+ */
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
+/**
+ * Format a file size in bytes to a human-readable string
+ */
+export function formatFileSize(bytes: number): string {
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let size = bytes;
+  let unitIndex = 0;
+  
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024;
+    unitIndex++;
+  }
+  
+  return \`\${size.toFixed(1)} \${units[unitIndex]}\`;
+}
+
+/**
+ * Debounce function to limit how often a function can be called
+ */
+export function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout;
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+}`;
+    } else if (fileName === 'package.json') {
+      return `{
+  "name": "demo-project",
+  "version": "1.0.0",
+  "description": "A demo project showcasing lazy loading functionality",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "^14.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "tailwindcss": "^3.0.0",
+    "clsx": "^2.0.0",
+    "class-variance-authority": "^0.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "typescript": "^5.0.0",
+    "eslint": "^8.0.0",
+    "eslint-config-next": "^14.0.0"
+  }
+}`;
+    }
+    
+    return `// Simulated content for ${filePath}
+// This content was lazy-loaded successfully!
+
+export default function ExampleComponent() {
+  return (
+    <div className="p-4">
+      <h2 className="text-lg font-semibold">Lazy Loaded Content</h2>
+      <p>This content was loaded on demand when you clicked the file.</p>
+      <p>File: {filePath}</p>
+    </div>
+  );
+}`;
+  }, []);
+
+  // Check if content is a placeholder
+  const isPlaceholderContent = useCallback((content: string): boolean => {
+    return content.includes('will be loaded on demand.');
+  }, []);
+
+  // Memoized file selection handler with lazy loading
+  const handleFileSelect = useCallback(async (file: { path: string, content: string, id: string }) => {
+    // Set the selected file immediately (might be placeholder content)
     setSelectedFile({ path: file.path, content: file.content });
     // Update progress tracking by adding the file ID to viewed set
     setViewedFiles(prev => new Set(prev).add(file.id));
-  }, []);
+
+    // If content is a placeholder, fetch the real content
+    if (isPlaceholderContent(file.content)) {
+      setIsLoadingFileContent(true);
+      
+      try {
+        let newContent: string;
+        
+        // Check if we're in demo mode
+        if (isDemoMode) {
+          // Simulate loading delay for demo
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          newContent = simulateFileContent(file.path);
+        } else {
+          // Real GitHub API call
+          const fileContentResult = await getFileContent({
+            repoUrl: repoUrl,
+            filePath: file.path.startsWith('/') ? file.path.slice(1) : file.path,
+            fileId: file.id,
+          });
+          newContent = fileContentResult.content;
+        }
+
+        // Update the file tree with the real content
+        const updatedTree = updateFileContentInTree(file.id, newContent);
+        setFileTree(updatedTree);
+
+        // Update the selected file with the real content
+        setSelectedFile({ path: file.path, content: newContent });
+
+        toast({
+          title: "File loaded",
+          description: `Successfully loaded content for ${file.path}`,
+        });
+      } catch (error) {
+        console.error('Error loading file content:', error);
+        
+        let errorMessage = 'Failed to load file content.';
+        if (error instanceof Error) {
+          errorMessage = error.message;
+        }
+        
+        toast({
+          title: "Failed to load file",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoadingFileContent(false);
+      }
+    }
+  }, [repoUrl, isPlaceholderContent, updateFileContentInTree, simulateFileContent, fileTree, isDemoMode, toast]);
 
   const projectStructureString = useMemo(() => JSON.stringify(fileTree, null, 2), [fileTree]);
 
@@ -238,23 +486,33 @@ export function StudioFlowApp() {
                       aria-describedby="repo-url-help"
                     />
                   </div>
-                  <Button 
-                    onClick={handleAnalyzeRepo} 
-                    disabled={isLoading}
-                    aria-describedby="analyze-button-help"
-                  >
-                    {isLoading ? (
-                      <>
-                        <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-                        Analyzing...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="mr-2 h-4 w-4" aria-hidden="true" /> 
-                        Analyze Repository
-                      </>
-                    )}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={handleAnalyzeRepo} 
+                      disabled={isLoading}
+                      aria-describedby="analyze-button-help"
+                    >
+                      {isLoading ? (
+                        <>
+                          <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                          Analyzing...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="mr-2 h-4 w-4" aria-hidden="true" /> 
+                          Analyze Repository
+                        </>
+                      )}
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={loadDemoData} 
+                      disabled={isLoading}
+                    >
+                      <BookOpen className="mr-2 h-4 w-4" aria-hidden="true" />
+                      Demo Mode
+                    </Button>
+                  </div>
                 </div>
                 <div id="repo-url-help" className="sr-only">
                   Enter a public GitHub repository URL to analyze its structure and get AI-powered insights
@@ -291,11 +549,22 @@ export function StudioFlowApp() {
                       currentFile={selectedFile}
                     />
                 </div>
-                <CodeView 
-                  filePath={selectedFile.path}
-                  code={selectedFile.content}
-                  projectStructure={projectStructureString}
-                />
+                {isLoadingFileContent ? (
+                  <Card>
+                    <CardContent className="flex items-center justify-center p-10">
+                      <div className="flex items-center gap-2">
+                        <LoaderCircle className="h-6 w-6 animate-spin text-primary" />
+                        <span className="text-muted-foreground">Loading file content...</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <CodeView 
+                    filePath={selectedFile.path}
+                    code={selectedFile.content}
+                    projectStructure={projectStructureString}
+                  />
+                )}
               </div>
             ) : (
               <div className="flex items-center justify-center text-center p-10 border-2 border-dashed rounded-lg h-96" role="status">

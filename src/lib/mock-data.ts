@@ -196,3 +196,72 @@ export function cn(...inputs: ClassValue[]) {
 }`,
   },
 ];
+
+// Mock file tree with lazy loading placeholders for demonstration
+export const mockFileTreeWithPlaceholders: FileNode[] = [
+  {
+    id: '1',
+    name: 'src',
+    type: 'folder',
+    children: [
+      {
+        id: '2',
+        name: 'components',
+        type: 'folder',
+        children: [
+          {
+            id: '3',
+            name: 'button.tsx',
+            type: 'file',
+            content: '// Content for src/components/button.tsx will be loaded on demand.',
+          },
+          {
+            id: '4',
+            name: 'input.tsx',
+            type: 'file',
+            content: '// Content for src/components/input.tsx will be loaded on demand.',
+          },
+          {
+            id: '5',
+            name: 'card.tsx',
+            type: 'file',
+            content: `import React from 'react';
+import { cn } from '@/lib/utils';
+
+interface CardProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+export const Card: React.FC<CardProps> = ({ children, className }) => {
+  return (
+    <div className={cn("bg-white shadow-md rounded-lg p-4", className)}>
+      {children}
+    </div>
+  );
+};`, // This one has real content already loaded
+          },
+        ],
+      },
+      {
+        id: '6',
+        name: 'lib',
+        type: 'folder',
+        children: [
+          {
+            id: '7',
+            name: 'utils.ts',
+            type: 'file',
+            content: '// Content for src/lib/utils.ts will be loaded on demand.',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: '8',
+    name: 'package.json',
+    type: 'file',
+    content: '// Content for package.json will be loaded on demand.',
+  },
+];
