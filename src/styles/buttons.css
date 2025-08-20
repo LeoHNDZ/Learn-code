@@ -1,0 +1,32 @@
+@import './tokens.css';
+
+.button { /* simplified base; full version available if needed */
+  --btn-bg: var(--gradient-brand);
+  --btn-bg-hover: var(--gradient-brand-hover);
+  --btn-color: #fff;
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 1.05rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  display: inline-flex;
+  gap: 0.55em;
+  align-items: center;
+  cursor: pointer;
+  background: var(--btn-bg);
+  color: var(--btn-color);
+  box-shadow: var(--shadow-sm);
+  transition: background 160ms var(--ease), box-shadow 160ms var(--ease);
+}
+.button:hover { background: var(--btn-bg-hover); box-shadow: var(--shadow); }
+.button:focus-visible { outline: none; box-shadow: var(--shadow), var(--focus-ring); }
+.button--secondary { 
+  --btn-bg: #fff; 
+  --btn-bg-hover: var(--color-brand-50); 
+  --btn-color: var(--color-brand-700); 
+  background: var(--btn-bg); 
+  color: var(--btn-color); 
+  border-color: var(--color-brand-300); 
+}
+.button--secondary:hover { background: var(--btn-bg-hover); }
