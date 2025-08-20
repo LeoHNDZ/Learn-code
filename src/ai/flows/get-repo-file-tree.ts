@@ -11,7 +11,6 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import { Octokit } from 'octokit';
-import { mockFileTree } from '@/lib/mock-data';
 
 const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
 
@@ -42,57 +41,51 @@ export type FileNode = z.infer<typeof FileNodeSchema>;
 
 // Fetches the file tree content recursively from GitHub.
 async function fetchGitHubTree(owner: string, repo: string, sha: string): Promise<FileNode[]> {
-  try {
-    const { data } = await octokit.rest.git.getTree({
-      owner,
-      repo,
-      tree_sha: sha,
-      recursive: '1', // Using recursive fetch
-    });
+  const { data } = await octokit.rest.git.getTree({
+    owner,
+    repo,
+    tree_sha: sha,
+    recursive: '1', // Using recursive fetch
+  });
 
-    if (!data.tree) return [];
+  if (!data.tree) return [];
 
-    const fileMap: { [key: string]: FileNode } = {};
-    const rootNodes: FileNode[] = [];
+  const fileMap: { [key: string]: FileNode } = {};
+  const rootNodes: FileNode[] = [];
 
-    // Sort to ensure parent directories are processed before their children
-    const sortedTree = [...data.tree].sort((a, b) => (a.path || '').localeCompare(b.path || ''));
+  // Sort to ensure parent directories are processed before their children
+  const sortedTree = [...data.tree].sort((a, b) => (a.path || '').localeCompare(b.path || ''));
 
-    for (const item of sortedTree) {
-      if (!item.path || !item.type) continue;
-      
-      const pathParts = item.path.split('/');
-      const name = pathParts.pop()!;
-      const parentPath = pathParts.join('/');
-      
-      let node: FileNode;
-      if (item.type === 'tree') {
-        node = { id: item.sha!, name, type: 'folder', children: [] };
-      } else if (item.type === 'blob') {
-        // For simplicity, we are not fetching content here. The app fetches it on file select.
-        // A full implementation might fetch small files here.
-        node = { id: item.sha!, name, type: 'file', content: `// Content for ${item.path} will be loaded on demand.` };
-      } else {
-        continue; // Skip other types like 'commit'
-      }
-
-      fileMap[item.path] = node;
-
-      if (parentPath) {
-        const parent = fileMap[parentPath] as FileNode | undefined;
-        if (parent && parent.type === 'folder') {
-          parent.children.push(node);
-        }
-      } else {
-        rootNodes.push(node);
-      }
+  for (const item of sortedTree) {
+    if (!item.path || !item.type) continue;
+    
+    const pathParts = item.path.split('/');
+    const name = pathParts.pop()!;
+    const parentPath = pathParts.join('/');
+    
+    let node: FileNode;
+    if (item.type === 'tree') {
+      node = { id: item.sha!, name, type: 'folder', children: [] };
+    } else if (item.type === 'blob') {
+      // For simplicity, we are not fetching content here. The app fetches it on file select.
+      // A full implementation might fetch small files here.
+      node = { id: item.sha!, name, type: 'file', content: `// Content for ${item.path} will be loaded on demand.` };
+    } else {
+      continue; // Skip other types like 'commit'
     }
-    return rootNodes;
-  } catch (error) {
-    console.error(`Error fetching GitHub tree for ${owner}/${repo}:`, error);
-    // In case of API errors (e.g., rate limit), fall back to mock data
-    return mockFileTree;
+
+    fileMap[item.path] = node;
+
+    if (parentPath) {
+      const parent = fileMap[parentPath] as FileNode | undefined;
+      if (parent && parent.type === 'folder') {
+        parent.children.push(node);
+      }
+    } else {
+      rootNodes.push(node);
+    }
   }
+  return rootNodes;
 }
 
 export async function getRepoFileTree(input: GetRepoFileTreeInput): Promise<FileNode[]> {
@@ -129,10 +122,17 @@ const fileTreeFlow = ai.defineFlow(
       }
       
       return await fetchGitHubTree(owner, repo, treeSha);
-    } catch (error) {
-      console.error('Error in fileTreeFlow, falling back to mock data.', error);
-      // Fallback for private repos or other errors
-      return mockFileTree;
+    } catch (error: any) {
+      console.error(`Error fetching file tree for ${repoUrl}:`, error);
+
+      if (error.status === 404) {
+        throw new Error(`Repository not found at ${repoUrl}. Please check the URL and ensure the repository is public.`);
+      } else if (error.status === 403) {
+        throw new Error('GitHub API rate limit exceeded. Please add a GITHUB_TOKEN to your .env file to make authenticated requests, or try again later.');
+      }
+      
+      // Re-throw a more generic error for other cases
+      throw new Error(`Failed to fetch repository data. Please ensure the repository is public and accessible.`);
     }
   }
 );

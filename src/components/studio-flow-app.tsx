@@ -161,22 +161,7 @@ export function StudioFlowApp() {
       let errorMessage = "Unable to analyze the repository. Please try again.";
       
       if (error instanceof Error) {
-        // Handle specific error types
-        if (error.message.includes('404') || error.message.includes('Not Found')) {
-          errorTitle = "Repository Not Found";
-          errorMessage = "The repository could not be found. Please check that the URL is correct and the repository is public.";
-        } else if (error.message.includes('403') || error.message.includes('Forbidden')) {
-          errorTitle = "Access Denied";
-          errorMessage = "Access to this repository is restricted. It might be private or require a GITHUB_TOKEN environment variable with access rights.";
-        } else if (error.message.includes('rate limit') || error.message.includes('429')) {
-          errorTitle = "Rate Limit Exceeded";
-          errorMessage = "Too many requests. Please wait a moment before trying again.";
-        } else if (error.message.includes('network') || error.message.includes('fetch')) {
-          errorTitle = "Network Error";
-          errorMessage = "Unable to connect to the repository. Please check your internet connection and try again.";
-        } else {
-          errorMessage = `Error: ${error.message}`;
-        }
+        errorMessage = error.message;
       }
       
       toast({ 
@@ -201,7 +186,7 @@ export function StudioFlowApp() {
 
   return (
     <SidebarProvider>
-      <div className="relative min-h-screen w-full bg-background">
+      <div className="relative min-h-screen w-full bg-background md:ml-[var(--sidebar-width-icon)]">
         {/* Main navigation sidebar with file tree */}
         <Sidebar className="sidebar-transition" aria-label="File navigation">
           <SidebarContent className="p-0">
@@ -300,11 +285,11 @@ export function StudioFlowApp() {
             {/* Code viewer and analysis area */}
             {selectedFile ? (
               <div className="space-y-4" role="region" aria-label="Code viewer">
-                <div className="flex justify-end">
-                  <CodeComparison 
-                    files={fileTree} 
-                    currentFile={selectedFile}
-                  />
+                 <div className="flex justify-end">
+                    <CodeComparison 
+                      files={fileTree} 
+                      currentFile={selectedFile}
+                    />
                 </div>
                 <CodeView 
                   filePath={selectedFile.path}
@@ -322,8 +307,7 @@ export function StudioFlowApp() {
                 </div>
               </div>
             )}
-
-            {/* AI Chat Example - New feature demonstration */}
+             {/* AI Chat Example - New feature demonstration */}
             {fileTree.length > 0 && (
               <Card>
                 <CardHeader>
