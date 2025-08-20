@@ -1,3 +1,4 @@
+'use client';
 import { useCallback, useRef } from 'react';
 import { useConversationStore } from './conversationStore';
 import { GeminiClient, GeminiRESTAdapter } from '../../packages/ai-core/src';
