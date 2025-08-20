@@ -17,6 +17,25 @@ export default {
       colors: {
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
+        brand: {
+          50:  '#f5f8ff',
+          100: '#e8f0ff',
+          200: '#c9ddff',
+          300: '#a6c7ff',
+          400: '#7cabff',
+          500: '#4d8cff',
+          600: '#256ef1',
+          650: '#1f60d4',
+          700: '#1a4ea8',
+          800: '#143a7a',
+          900: '#0d274f'
+        },
+        accent: {
+          DEFAULT: 'hsl(var(--accent))',
+          foreground: 'hsl(var(--accent-foreground))',
+          500: '#12b4b9', 
+          600: '#0d9498' 
+        },
         card: {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
@@ -36,10 +55,6 @@ export default {
         muted: {
           DEFAULT: 'hsl(var(--muted))',
           foreground: 'hsl(var(--muted-foreground))',
-        },
-        accent: {
-          DEFAULT: 'hsl(var(--accent))',
-          foreground: 'hsl(var(--accent-foreground))',
         },
         destructive: {
           DEFAULT: 'hsl(var(--destructive))',
